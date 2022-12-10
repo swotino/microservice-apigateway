@@ -47,6 +47,7 @@
     <repositories>
         <repository>
             <id>${NEXUS_GROUP}</id>
+            <!--suppress UnresolvedMavenProperty -->
             <url>http://${NEXUS_HOST}:${NEXUS_PORT}/repository/${NEXUS_GROUP}/</url>
         </repository>
     </repositories>
