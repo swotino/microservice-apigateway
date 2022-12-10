@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.1.0">
+
+    <servers>
+        <server>
+            <id>${NEXUS_REPOSITORIES}</id>
+            <username>${NEXUS_USER}</username>
+            <password>${NEXUS_PASSWORD}</password>
+        </server>
+
+        <server>
+            <id>${NEXUS_GROUP}</id>
+            <username>${NEXUS_USER}</username>
+            <password>${NEXUS_PASSWORD}</password>
+        </server>
+    </servers>
+
+    <mirrors>
+        <mirror>
+            <id>${NEXUS_REPOSITORIES}</id>
+            <name>${NEXUS_REPOSITORIES}</name>
+            <url>http://${NEXUS_HOST}:${NEXUS_PORT}/repository/${NEXUS_GROUP}</url>
+            <mirrorOf>*</mirrorOf>
+        </mirror>
+    </mirrors>
+
+</settings>
