@@ -48,6 +48,7 @@
     <repositories>
         <repository>
             <id>${NEXUS_GROUP}</id>
+
             <url>http://${NEXUS_HOST}:${NEXUS_PORT}/repository/${NEXUS_GROUP}/</url>
         </repository>
     </repositories>
