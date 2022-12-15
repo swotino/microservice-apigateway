@@ -29,6 +29,7 @@ pipeline {
             }
         }
 
+        /*
         stage('Maven CheckStyle') {
             steps {
                 echo 'Maven Checkstyle'
@@ -55,6 +56,7 @@ pipeline {
                 }
             }
         }
+        */
 
         stage('Populate versions') {
             steps {
@@ -63,12 +65,14 @@ pipeline {
             }
         }
 
+        /*
         stage('Jenkins Artifact') {
             steps {
                 echo 'Creating jenkins artifact...'
                 archiveArtifacts artifacts: 'versions/*.jar'
             }
         }
+
 
         stage ('Nexus') {
             steps {
@@ -85,6 +89,7 @@ pipeline {
                     version: BUILD_NUMBER
             }
         }
+        */
 
         stage ('Dockerfile') {
             steps {
