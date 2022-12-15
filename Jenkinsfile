@@ -1,116 +1,98 @@
-def COLOR_MAP = [
-    'SUCCESS': '#00FF00',
-    'UNSTABLE': '#FFFF00',
-    'FAILURE': '#FF0000',
-    'ABORTED': '#000000'
-]
-
+def COLORS = [ 'SUCCESS': '#00AA00', 'FAILURE': '#AA0000', 'ABORTED': '#000000']
 pipeline {
-
     agent any
 
     environment {
-        // Path to the settings.xml file
-        MAVEN_SETTINGS = 'settings.xml'
+        NEXUS_HOST='10.166.0.17'
+        NEXUS_PORT=8081
+        NEXUS_USER='admin'
+        NEXUS_PASSWORD='admin'
+        NEXUS_REPOSITORY='apigateway.release'
+        NEXUS_REPOSITORIES='maven.dependencies'
+        NEXUS_GROUP='com.microservice'
 
-        // Nexus configuration
-        NEXUS_HOST = '192.168.10.102'
-        NEXUS_PORT = 8081
-        NEXUS_USER = 'admin'
-        NEXUS_PASSWORD = 'admin123'
-        NEXUS_REPOSITORIES = 'microservices.repositories'
-        NEXUS_GROUP = 'microservices.demo'
-        NEXUS_RELEASE = 'microservices.api-gateway'
+        SETTINGS='settings.xml'
     }
 
     stages {
-        stage('Fetch data from GitHub') {
+        stage('Get from GIT') {
             steps {
-                echo 'Fetching data from GitHub..'
-                git branch: 'master', credentialsId: 'GitHub Jenkins', url: 'https://github.com/swotino/microservice-apigateway.git'
+                echo 'Fetching data...'
+                git branch: 'master', url: 'https://github.com/swotino/microservice-apigateway.git'
             }
         }
 
-        stage('Maven install') {
+        stage('Maven Install') {
             steps {
-                echo 'Maven installing..'
-                sh 'mvn -s $MAVEN_SETTINGS clean install -DskipTests'
+                echo 'Maven Install'
+                sh 'mvn -s $SETTINGS clean install -DskipTests'
             }
         }
 
-        stage('Maven checkstyle') {
+        stage('Maven CheckStyle') {
             steps {
-                echo 'Checkstyle..'
-                sh 'mvn -s $MAVEN_SETTINGS checkstyle:checkstyle'
+                echo 'Maven Checkstyle'
+                sh 'mvn -s $SETTINGS checkstyle:checkstyle'
             }
         }
 
-        stage('SonarQube Scanner') {
+        stage('Sonarqube') {
             environment {
-                scanner = tool 'SonarQubeScanner'
+                SCANNER = tool 'sonar-scanner'
             }
+
             steps {
-                echo 'SonarQube Scanner..'
-                withSonarQubeEnv('SonarQube Server') {
-                    sh """$scanner/bin/sonar-scanner \
-                    -Dsonar.projectKey=api-gateway \
+                echo 'SonarQube Scanner'
+                withSonarQubeEnv('sonarqube-server') {
+                    sh """$SCANNER/bin/sonar-scanner \
+                    -Dsonar.projectKey=apigateway \
                     -Dsonar.projectName=API-Gateway \
-                    -Dsonar.projectVersion=${BUILD_NUMBER} \
+                    -Dsonar.projectVersion=1.0 \
                     -Dsonar.sources=src/ \
-                    -Dsonar.java.binaries=target/test-classes/com/microservices/apigateway/apigateway/ \
+                    -Dsonar.java.binaries=target/test-classes/com/microservices/apigateway/apigateway \
                     -Dsonar.java.checkstyle.reportPaths=target/checkstyle-result.xml \
                     """
                 }
-
-                echo 'Waiting for SonarQube analysis to complete..'
-                timeout(time: 60, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-                }
             }
         }
 
-        stage('Copy Artifacts') {
+        stage('Populate versions') {
             steps {
-                echo 'Artifacts..'
                 sh 'mkdir -p versions'
-                sh 'cp target/*.jar versions/api-gateway-${BUILD_NUMBER}.jar'
+                sh "cp target/**.jar versions/apigateway-v${BUILD_NUMBER}.jar"
             }
         }
 
-        stage('Create an artifact') {
+        stage('Jenkins Artifact') {
             steps {
-                echo 'Creating artifact..'
+                echo 'Creating jenkins artifact...'
                 archiveArtifacts artifacts: 'versions/*.jar'
             }
         }
 
-        stage('Uploading to Nexus') {
+        stage ('Nexus') {
             steps {
-                echo 'Uploading to Nexus..'
-                nexusArtifactUploader (
-                    artifacts: [[
-                        artifactId: 'api-gateway',
-                        classifier: '',
-                        file: 'versions/api-gateway-$BUILD_NUMBER.jar',
-                        type: 'jar']],
-                    credentialsId: 'nexuslogin',
+                echo 'Nexus uploading...'
+                nexusArtifactUploader artifacts: [
+                    [artifactId: 'api-gateway', classifier: '', file: 'versions/apigateway-v$BUILD_NUMBER.jar', type: 'jar']
+                    ],
+                    credentialsId: 'nexus-auth',
                     groupId: NEXUS_GROUP,
-                    nexusUrl: '192.168.10.102:8081',
+                    nexusUrl: "${NEXUS_HOST}:${NEXUS_PORT}",
                     nexusVersion: 'nexus3',
                     protocol: 'http',
-                    repository: NEXUS_RELEASE,
+                    repository: NEXUS_REPOSITORY,
                     version: BUILD_NUMBER
-                )
             }
         }
     }
 
     post {
         always {
-            echo 'Slack notifications..'
-            slackSend color: COLOR_MAP[currentBuild.currentResult],
-                message: "${currentBuild.currentResult}: Job ${JOB_NAME} build ${BUILD_NUMBER}.\n More info at ${BUILD_URL}",
-                channel: '#springrest'
+            echo 'Slack notify'
+            slackSend channel: '#microservizi',
+                color: COLORS[currentBuild.currentResult],
+                message: "${currentBuild.currentResult}: Job ${JOB_NAME} build ${BUILD_NUMBER}.\nInfo at ${BUILD_URL}"
         }
     }
 }
