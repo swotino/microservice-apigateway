@@ -85,6 +85,32 @@ pipeline {
                     version: BUILD_NUMBER
             }
         }
+
+        stage ('Dockerfile') {
+            steps {
+                echo 'Creating the Dockerfile...'
+                sh 'touch Dockerfile'
+                sh 'echo "FROM debian" > Dockerfile'
+                sh 'echo "RUN apt update && apt install -y openjdk-17-jdk" >> Dockerfile'
+                sh 'echo "COPY versions/apigateway-v${BUILD_NUMBER}.jar apigateway-v${BUILD_NUMBER}.jar" >> Dockerfile'
+                sh 'echo "EXPOSE 9090" >> Dockerfile'
+                sh 'echo "ENTRYPOINT java -jar apigateway-v${BUILD_NUMBER}.jar > log.txt 2>&1" >> Dockerfile'
+            }
+        }
+
+        stage ('Docker container') {
+            steps {
+                echo 'Creating the container...'
+                sh 'docker build -t swotino/microservice .'
+            }
+        }
+
+        stage ('Docker uploading') {
+            steps {
+                echo 'Uploading container...'
+                sh 'docker push swotino/microservice'
+            }
+        }
     }
 
     post {
