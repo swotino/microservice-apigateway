@@ -12,15 +12,12 @@ pipeline {
         NEXUS_GROUP='com.microservice'
 
         SETTINGS='settings.xml'
-
-        VERSION=22 + BUILD_NUMBER
     }
 
     stages {
         stage('Get from GIT') {
             steps {
                 echo 'Fetching data...'
-                echo "${VERSION}"
                 git branch: 'master', url: 'https://github.com/swotino/microservice-apigateway.git'
             }
         }
