@@ -104,13 +104,6 @@ pipeline {
                 sh 'docker build -t swotino/microservice .'
             }
         }
-
-        stage ('Docker uploading') {
-            steps {
-                echo 'Uploading container...'
-                sh 'docker push swotino/microservice'
-            }
-        }
     }
 
     post {
